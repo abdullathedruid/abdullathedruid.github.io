@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Abdulla's Blog | articles tagged "solidity"</title>
+    <link rel="shortcut icon" type="image/png" href="/favicon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/theme/css/main.css" type="text/css" />
+    <link rel="stylesheet" href="/theme/css/pygments.css" type="text/css" />
+    <meta name="generator" content="Pelican" />
+    <meta name="description" content="" />
+    <meta name="author" content="Abdulla Al-Kamil" />
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li class="ephemeral selected"><a href="/tag/solidity.html">solidity</a></li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/pages/about.html">About Me</a></li>
+                <li><a href="https://github.com/abdullathedruid">GitHub</a></li>
+                <li><a href="/tags">Tags</a></li>
+                <li><a href="/categories">Categories</a></li>
+                <li><a href="/archives">Archives</a></li>
+            </ul>
+        </nav>
+        <div class="header_box">
+            <h1><a href="/">Abdulla's Blog</a></h1>
+        </div>
+    </header>
+    <div id="wrapper">
+        <div id="content">            <h4 class="date">Jun 27, 2022</h4>
+
+            <article class="post">
+                <h2 class="title">
+                    <a href="/solidity-vs-vyper-part-1-arithmetic-overflow.html" rel="bookmark" title="Permanent Link to &quot;Solidity vs Vyper (Part 1 - Arithmetic overflow)&quot;">Solidity vs Vyper (Part 1 - Arithmetic overflow)</a>
+                </h2>
+
+                
+                
+
+                <p>On ethereum, there are two main smart contract languages which are currently being used to deploy smart contracts: Solidity and Vyper. In this series of posts, I will discuss some of the peculiarities of writing smart contracts and use examples from both languages to explain them.</p>
+<p>The first contract that we will look at is the <code>ERC20 token</code>, of which there are many examples such as <code>Dai</code>, <code>WETH</code> and <code>UNI</code>. The smart contracts for these tokens act as a distributed ledger, which keeps track of the balances of all users. When a user transfers their tokens to another user, the smart contract must first check whether the user has sufficient balance, and then update the balances of both the sender and receiver. To highlight some of the differences between Solidity and Vyper, I will display just the code required to transfer tokens from the sender to another user. Full implementations can be found for <a href="https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol">Solidity</a> and <a href="https://github.com/vyperlang/vyper/blob/master/examples/tokens/ERC20.vy">Vyper</a>.</p>
+<h2>Solidity</h2>
+<div class="highlight"><pre><span></span><code><span class="k">pragma solidity</span><span class="w"> </span><span class="o">^</span><span class="k">0.8.0</span><span class="p">;</span><span class="w"></span>
+
+<span class="k">contract</span><span class="w"> </span><span class="ni">ERC20</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">mapping</span><span class="p">(</span><span class="kt">address</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="kt">uint256</span><span class="p">)</span><span class="w"> </span><span class="kt">public</span><span class="w"> </span>balanceOf<span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">function</span><span class="w"> </span><span class="nv">transfer</span><span class="p">(</span><span class="kt">address</span><span class="w"> </span><span class="nv">to</span><span class="p">,</span><span class="w"> </span><span class="kt">uint256</span><span class="w"> </span><span class="nv">amount</span><span class="p">)</span><span class="w"> </span><span class="kt">public</span><span class="w"> </span><span class="kt">returns</span><span class="w"> </span><span class="p">(</span><span class="kt">bool</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span>balanceOf<span class="p">[</span><span class="k">msg.sender</span><span class="p">]</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span>amount<span class="p">;</span><span class="w"></span>
+<span class="w">        </span>balanceOf<span class="p">[</span>to<span class="p">]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span>amount<span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">return</span><span class="w"> </span><span class="kt">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<h2>Vyper</h2>
+<div class="highlight"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nv">@version</span><span class="w"> </span><span class="o">^</span><span class="mf">0.3.0</span><span class="w"></span>
+<span class="nl">balanceOf</span><span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="p">(</span><span class="n">HashMap</span><span class="o">[</span><span class="n">address, uint256</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
+
+<span class="nv">@external</span><span class="w"></span>
+<span class="n">def</span><span class="w"> </span><span class="n">transfer</span><span class="p">(</span><span class="k">to</span><span class="err">:</span><span class="w"> </span><span class="n">address</span><span class="p">,</span><span class="w"> </span><span class="nl">amount</span><span class="p">:</span><span class="w"> </span><span class="n">uint256</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nl">bool</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">self</span><span class="p">.</span><span class="n">balanceOf</span><span class="o">[</span><span class="n">msg.sender</span><span class="o">]</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="n">amount</span><span class="w"></span>
+<span class="w">    </span><span class="n">self</span><span class="p">.</span><span class="n">balanceOf</span><span class="o">[</span><span class="n">to</span><span class="o">]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">amount</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">True</span><span class="w"></span>
+</code></pre></div>
+
+<p>It should be apparent that both smart contract languages are very similar in their implementation of an ERC20 token. Both contracts utilise a mapping from an <code>address</code> to a <code>uint256</code> in order to signify a users balance. </p>
+<p>It is important to highlight what would happen with arithmetic over/underflow. If we allow a user to send tokens when they have an insufficient balance, this would result in that user ending with a negative amount of tokens. As the balance is stored as a <code>uint256</code>, this would underflow - causing the user to have a balance in the region of <code>2 ** 256</code> which would obviously be a very serious bug! All versions of Vyper natively check for these arithmetic errors, and cause the transaction to be reverted. This feature was also added to Solidity in version 0.8.0. Anybody choosing to write a contract in an older version of Solidity will need to manually check for over/underflow or utilise a library to do this.</p>
+<p>To give an illustration of what would happen if we use an older version of Solidity, I have used the exact same code as presented above but changed the compiler version to 0.7.0. If we run the code, we get the following:</p>
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">sender</span> <span class="o">=</span> <span class="n">accounts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">receiver</span> <span class="o">=</span> <span class="n">accounts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">overflow_erc20</span> <span class="o">=</span> <span class="n">sender</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span><span class="n">ERC20</span><span class="p">)</span>
+<span class="n">Transaction</span> <span class="n">sent</span><span class="p">:</span> <span class="mh">0xd7f0c229b122fb0795d03693222b527c5a7f0077651f36c93ec9e58e01125d8a</span>
+  <span class="n">Gas</span> <span class="n">price</span><span class="p">:</span> <span class="mf">0.0</span> <span class="n">gwei</span>   <span class="n">Gas</span> <span class="n">limit</span><span class="p">:</span> <span class="mi">12000000</span>   <span class="n">Nonce</span><span class="p">:</span> <span class="mi">0</span>
+  <span class="n">ERC20</span><span class="o">.</span><span class="n">constructor</span> <span class="n">confirmed</span>   <span class="n">Block</span><span class="p">:</span> <span class="mi">1</span>   <span class="n">Gas</span> <span class="n">used</span><span class="p">:</span> <span class="mi">116515</span> <span class="p">(</span><span class="mf">0.97</span><span class="o">%</span><span class="p">)</span>
+  <span class="n">ERC20</span> <span class="n">deployed</span> <span class="n">at</span><span class="p">:</span> <span class="mh">0x299784aE2AF66133155848a9D2bcAde3B9f5b32c</span>
+
+<span class="o">&gt;&gt;&gt;</span> <span class="n">overflow_erc20</span><span class="o">.</span><span class="n">transfer</span><span class="p">(</span><span class="n">receiver</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;from&quot;</span><span class="p">:</span> <span class="n">sender</span><span class="p">})</span>
+<span class="n">Transaction</span> <span class="n">sent</span><span class="p">:</span> <span class="mh">0x4383921e24d79d235318c2fbad56a191586ab113f1c515ad94bd500f42c156ad</span>
+  <span class="n">Gas</span> <span class="n">price</span><span class="p">:</span> <span class="mf">0.0</span> <span class="n">gwei</span>   <span class="n">Gas</span> <span class="n">limit</span><span class="p">:</span> <span class="mi">12000000</span>   <span class="n">Nonce</span><span class="p">:</span> <span class="mi">1</span>
+  <span class="n">ERC20</span><span class="o">.</span><span class="n">transfer</span> <span class="n">confirmed</span>   <span class="n">Block</span><span class="p">:</span> <span class="mi">2</span>   <span class="n">Gas</span> <span class="n">used</span><span class="p">:</span> <span class="mi">63634</span> <span class="p">(</span><span class="mf">0.53</span><span class="o">%</span><span class="p">)</span>
+
+<span class="o">&lt;</span><span class="n">Transaction</span> <span class="s1">&#39;0x4383921e24d79d235318c2fbad56a191586ab113f1c515ad94bd500f42c156ad&#39;</span><span class="o">&gt;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">overflow_erc20</span><span class="o">.</span><span class="n">balanceOf</span><span class="p">(</span><span class="n">receiver</span><span class="p">)</span>
+<span class="mi">1</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">overflow_erc20</span><span class="o">.</span><span class="n">balanceOf</span><span class="p">(</span><span class="n">sender</span><span class="p">)</span>
+<span class="mi">115792089237316195423570985008687907853269984665640564039457584007913129639935</span>
+</code></pre></div>
+
+<blockquote>
+<p>This overflow error has resulted in the user now having more tokens than there are atoms in the universe!</p>
+</blockquote>
+<p>Developers must be very careful to ensure that these errors do not occur. In particular, it is important to be aware of the different behaviour provided by different compiler versions. When deploying any smart contract, it is important to have the code reviewed (either by external reviewers, or full audits) to reduce the risk of accidentally introducing any error that could result in significant loss for its users.</p>
+                <div class="clear"></div>
+
+                <div class="info">
+                    <a href="/solidity-vs-vyper-part-1-arithmetic-overflow.html">posted at 19:30</a>
+                    &nbsp;&middot;&nbsp;<a href="/category/smart-contracts.html" rel="tag">Smart Contracts</a>
+                    &nbsp;&middot;
+                    &nbsp;<a href="/tag/ethereum.html" class="tags">ethereum</a>
+                    &nbsp;<a href="/tag/solidity.html" class="tags selected">solidity</a>
+                    &nbsp;<a href="/tag/vyper.html" class="tags">vyper</a>
+                    &nbsp;<a href="/tag/erc20.html" class="tags">erc20</a>
+                </div>
+            </article>
+
+            <div class="clear"></div>
+            <footer>
+                <p>
+                <a href="https://github.com/jody-frankowski/blue-penguin">Blue Penguin</a> Theme
+                &middot;
+                Powered by <a href="http://getpelican.com">Pelican</a>
+            </footer>
+        </div>
+        <div class="clear"></div>
+    </div>
+</body>
+</html>

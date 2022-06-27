@@ -17,7 +17,6 @@
         <nav>
             <ul>
                 <li class="selected"><a href="/">Home</a></li>
-                <li><a href="/pages/about.html">About Me</a></li>
                 <li><a href="https://github.com/abdullathedruid">GitHub</a></li>
                 <li><a href="/tags">Tags</a></li>
                 <li><a href="/categories">Categories</a></li>
@@ -29,105 +28,7 @@
         </div>
     </header>
     <div id="wrapper">
-        <div id="content">            <h4 class="date">Feb 03, 2022</h4>
-
-            <article class="post">
-                <h2 class="title">
-                    <a href="/on-the-topic-of-gas-optimisation.html" rel="bookmark" title="Permanent Link to &quot;On the topic of gas optimisation&quot;">On the topic of gas optimisation</a>
-                </h2>
-
-                
-                
-
-                <h2>Introduction</h2>
-<p>A few topics recently crossed my attention. A user on reddit lost 500K by sending WETH to the WETH contract address</p>
-<p><a href="https://www.reddit.com/r/ethereum/comments/sfz4kw/did_i_just_lose_half_a_million_dollars_by_sending">Reddit: Did I just lose half a million dollars by sending WETH to WETH's contract address?</a></p>
-<p>There has been some discussion recently on gas optimisations in smart contracts, which has been particularly relevant due to increasing gas prices.</p>
-<p>Should a smart contract prevent users from performing actions that would result in the loss of user funds?</p>
-<p>Adding extra checks (such as ensuring that the <code>sender</code> and <code>receiver</code> are not the same as the contract address) adds an additional gas stipend onto each transaction.<br>
-An argument could be made that it should be the responsibility of wallets and front-ends to prevent these transactions from ever reaching the blockchain. However, given that it is fairly common for tokens to be sent to the contract address, we know that this is not the case.</p>
-<p>I thought it would be a good idea to look into this further to decide for myself whether it made sense to add these checks from an economic perspective.</p>
-<h3>Idea</h3>
-<p>I would write two smart contracts representing ERC20 tokens: an 'unsafe' ERC20 which allows any transfer (ofcourse, the standard rules of balances and approvals will remain) and a 'safe' ERC20 which checks that the receiver and sender are valid addresses (by ensuring that they are not the zero address, or the contract address)</p>
-<p>From these contracts, I will get an estimate of the average gas cost for each function. </p>
-<p>I will then try and use these figures to get an idea of the gas saving that would have occurred during the lifespan of the WETH contract. I will also get an idea of how much WETH has been 'lost' after being sent to the WETH contract and compare these figures</p>
-<h3>Data</h3>
-<p>All contracts/scripts are available on <a href="https://github.com/abdullathedruid/gas-cost-erc20">Github</a>.</p>
-<p>The gas costs for each of the functions is displayed below, I will be using the average for my calculations. The average has been calculated from 1000 executions with random variables</p>
-<div class="highlight"><pre><span></span><code><span class="n">safeERC20</span> <span class="o">&lt;</span><span class="n">Contract</span><span class="o">&gt;</span>
-   <span class="err">├─</span> <span class="n">approve</span>      <span class="o">-</span>  <span class="n">avg</span><span class="p">:</span>  <span class="mi">42565</span>  <span class="n">avg</span> <span class="p">(</span><span class="n">confirmed</span><span class="p">):</span>  <span class="mi">42565</span>  <span class="n">low</span><span class="p">:</span>  <span class="mi">24521</span>  <span class="n">high</span><span class="p">:</span>  <span class="mi">44117</span>
-   <span class="err">├─</span> <span class="n">transfer</span>     <span class="o">-</span>  <span class="n">avg</span><span class="p">:</span>  <span class="mi">31945</span>  <span class="n">avg</span> <span class="p">(</span><span class="n">confirmed</span><span class="p">):</span>  <span class="mi">31945</span>  <span class="n">low</span><span class="p">:</span>  <span class="mi">27012</span>  <span class="n">high</span><span class="p">:</span>  <span class="mi">35808</span>
-   <span class="err">└─</span> <span class="n">transferFrom</span> <span class="o">-</span>  <span class="n">avg</span><span class="p">:</span>  <span class="mi">20442</span>  <span class="n">avg</span> <span class="p">(</span><span class="n">confirmed</span><span class="p">):</span>  <span class="mi">20442</span>  <span class="n">low</span><span class="p">:</span>  <span class="mi">18819</span>  <span class="n">high</span><span class="p">:</span>  <span class="mi">29250</span>
-<span class="n">unsafeERC20</span> <span class="o">&lt;</span><span class="n">Contract</span><span class="o">&gt;</span>
-   <span class="err">├─</span> <span class="n">approve</span>      <span class="o">-</span>  <span class="n">avg</span><span class="p">:</span>  <span class="mi">42519</span>  <span class="n">avg</span> <span class="p">(</span><span class="n">confirmed</span><span class="p">):</span>  <span class="mi">42519</span>  <span class="n">low</span><span class="p">:</span>  <span class="mi">24475</span>  <span class="n">high</span><span class="p">:</span>  <span class="mi">44071</span>
-   <span class="err">├─</span> <span class="n">transfer</span>     <span class="o">-</span>  <span class="n">avg</span><span class="p">:</span>  <span class="mi">31875</span>  <span class="n">avg</span> <span class="p">(</span><span class="n">confirmed</span><span class="p">):</span>  <span class="mi">31875</span>  <span class="n">low</span><span class="p">:</span>  <span class="mi">26942</span>  <span class="n">high</span><span class="p">:</span>  <span class="mi">35738</span>
-   <span class="err">└─</span> <span class="n">transferFrom</span> <span class="o">-</span>  <span class="n">avg</span><span class="p">:</span>  <span class="mi">20400</span>  <span class="n">avg</span> <span class="p">(</span><span class="n">confirmed</span><span class="p">):</span>  <span class="mi">20400</span>  <span class="n">low</span><span class="p">:</span>  <span class="mi">18782</span>  <span class="n">high</span><span class="p">:</span>  <span class="mi">29176</span>
-</code></pre></div>
-
-<p>In order to get a list of transactions on the WETH contract, I initially performed the following query:</p>
-<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"></span>
-<span class="w">    </span><span class="k">input</span><span class="p">,</span><span class="w"> </span><span class="n">gas_price</span><span class="p">,</span><span class="w"> </span><span class="n">gas</span><span class="w"></span>
-<span class="k">FROM</span><span class="w"> </span><span class="o">`</span><span class="n">bigquery</span><span class="o">-</span><span class="k">public</span><span class="o">-</span><span class="k">data</span><span class="p">.</span><span class="n">crypto_ethereum</span><span class="p">.</span><span class="n">transactions</span><span class="o">`</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">tx</span><span class="w"></span>
-<span class="k">WHERE</span><span class="w"></span>
-<span class="w">  </span><span class="n">tx</span><span class="p">.</span><span class="n">to_address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&#39;</span><span class="w"></span>
-</code></pre></div>
-
-<p>I then realised that this misses out on the majority of transactions on the WETH contract given that many contracts will sub-call the WETH contract, therefore the <code>to</code> address on the transaction will not be the WETH address.</p>
-<p>My new updated query looks like:</p>
-<div class="highlight"><pre><span></span><code><span class="k">WITH</span><span class="w"> </span><span class="n">traces</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">tr</span><span class="p">.</span><span class="n">transaction_hash</span><span class="p">,</span><span class="w"> </span><span class="n">tr</span><span class="p">.</span><span class="n">gas_used</span><span class="p">,</span><span class="w"> </span><span class="k">SUBSTRING</span><span class="p">(</span><span class="n">tr</span><span class="p">.</span><span class="k">input</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">sig_hash</span><span class="w"></span>
-<span class="k">FROM</span><span class="w"> </span><span class="o">`</span><span class="n">bigquery</span><span class="o">-</span><span class="k">public</span><span class="o">-</span><span class="k">data</span><span class="p">.</span><span class="n">crypto_ethereum</span><span class="p">.</span><span class="n">traces</span><span class="o">`</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span><span class="c1">--tracks internal transactions</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">tr</span><span class="p">.</span><span class="n">to_address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&#39;</span><span class="w"> </span><span class="c1">-- WETH</span>
-<span class="k">AND</span><span class="w"> </span><span class="n">tr</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
-<span class="k">AND</span><span class="w"> </span><span class="n">tr</span><span class="p">.</span><span class="n">call_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;call&#39;</span><span class="w"></span>
-<span class="p">),</span><span class="w"></span>
-
-<span class="n">txs</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">tr</span><span class="p">.</span><span class="n">sig_hash</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">tx</span><span class="p">.</span><span class="n">gas_price</span><span class="p">)</span><span class="o">/</span><span class="mi">1</span><span class="n">e9</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">gwei</span><span class="w"></span>
-<span class="k">FROM</span><span class="w"> </span><span class="o">`</span><span class="n">bigquery</span><span class="o">-</span><span class="k">public</span><span class="o">-</span><span class="k">data</span><span class="p">.</span><span class="n">crypto_ethereum</span><span class="p">.</span><span class="n">transactions</span><span class="o">`</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">tx</span><span class="w"></span>
-<span class="k">JOIN</span><span class="w"> </span><span class="n">traces</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span>
-<span class="k">ON</span><span class="w"> </span><span class="n">tr</span><span class="p">.</span><span class="n">transaction_hash</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tx</span><span class="p">.</span><span class="n">hash</span><span class="w"></span>
-<span class="p">)</span><span class="w"></span>
-
-<span class="k">SELECT</span><span class="w"> </span><span class="n">sig_hash</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">gwei</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">gwei</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">gwei</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">txs</span><span class="w"></span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">sig_hash</span><span class="w"></span>
-</code></pre></div>
-
-<blockquote>
-<p>I didn't think that this query would also return the calls for <code>totalSupply()</code> <code>decimals()</code>, etc. In future queries, I'll make sure to filter these out!</p>
-</blockquote>
-<p>The script <code>get_gas_saving.py</code> iterates through the functions above and sums the gas saved for each function. The output is as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="n">Running</span> <span class="s1">&#39;scripts/get_gas_saving.py::main&#39;</span><span class="o">...</span>
-<span class="mf">970677015.604</span> <span class="n">Gwei</span><span class="o">/</span><span class="n">gas</span> <span class="n">spent</span> <span class="n">on</span> <span class="n">performing</span> <span class="n">transferFrom</span><span class="p">()</span><span class="o">.</span> <span class="n">Each</span> <span class="n">function</span> <span class="n">saves</span> <span class="mi">42</span> <span class="n">gas</span>
-<span class="n">Total</span> <span class="n">ETH</span> <span class="n">saved</span> <span class="n">by</span> <span class="n">transferFrom</span><span class="p">():</span> <span class="mf">40.768</span>
-<span class="o">--</span>
-<span class="mf">8570367257.755</span> <span class="n">Gwei</span><span class="o">/</span><span class="n">gas</span> <span class="n">spent</span> <span class="n">on</span> <span class="n">performing</span> <span class="n">transfer</span><span class="p">()</span><span class="o">.</span> <span class="n">Each</span> <span class="n">function</span> <span class="n">saves</span> <span class="mi">70</span> <span class="n">gas</span>
-<span class="n">Total</span> <span class="n">ETH</span> <span class="n">saved</span> <span class="n">by</span> <span class="n">transfer</span><span class="p">():</span> <span class="mf">599.926</span>
-<span class="o">--</span>
-<span class="mf">311808609.989</span> <span class="n">Gwei</span><span class="o">/</span><span class="n">gas</span> <span class="n">spent</span> <span class="n">on</span> <span class="n">performing</span> <span class="n">approve</span><span class="p">()</span><span class="o">.</span> <span class="n">Each</span> <span class="n">function</span> <span class="n">saves</span> <span class="mi">46</span> <span class="n">gas</span>
-<span class="n">Total</span> <span class="n">ETH</span> <span class="n">saved</span> <span class="n">by</span> <span class="n">approve</span><span class="p">():</span> <span class="mf">14.343</span>
-<span class="o">--</span>
-<span class="n">Total</span> <span class="n">ETH</span> <span class="n">saving</span> <span class="n">across</span> <span class="nb">all</span> <span class="n">functions</span><span class="p">:</span> <span class="mf">655.037</span> 
-<span class="n">Total</span> <span class="n">number</span> <span class="n">of</span> <span class="n">transactions</span><span class="p">:</span> <span class="mi">91959066</span>
-</code></pre></div>
-
-<h2>Discussion</h2>
-<p>A cursory glance at the etherscan page shows that the WETH contract has 432.162 WETH lost within the contract, which <em>is</em> lower than the 655 ETH saved in gas fees.<br>
-The conclusion that I would draw here is that users of a smart contract would end up overpaying for the additional sanity checks discussed above.</p>
-<p>It may be interesting to perform the same query looking at all ERC20 tokens, rather than just WETH to see whether the same conclusion is valid across all ERC20s or just WETH.</p>
-<p>However, another argument could be made that it doesn't really make too much of a difference given the sheer number of transactions that have taken place. The difference of 223 ETH, when amortised over 92 million transactions is a value of 0.0000024 ETH per transaction.  </p>
-<p>After I published this post, I spoke with a few other people. One interesting perspective was that the additional sanity checks act as a form of socialised insurance. I personally do not mind paying fractionally more on a transaction, knowing that it might prevent somebody else from losing their funds.</p>
-                <div class="clear"></div>
-
-                <div class="info">
-                    <a href="/on-the-topic-of-gas-optimisation.html">posted at 00:00</a>
-                    &nbsp;&middot;&nbsp;<a href="/category/smart-contracts.html" rel="tag">Smart Contracts</a>
-                    &nbsp;&middot;
-                    &nbsp;<a href="/tag/ethereum.html" class="tags">ethereum</a>
-                    &nbsp;<a href="/tag/vyper.html" class="tags">vyper</a>
-                    &nbsp;<a href="/tag/gas.html" class="tags">gas</a>
-                </div>
-            </article>
+        <div id="content">
 
             <div class="clear"></div>
             <footer>

@@ -1,6 +1,6 @@
 ---
 title: 0xMonaco
-date: 2022-08-22
+date: 2022-08-22 20:27
 category: Smart Contracts
 tag: ethereum
 ---
@@ -10,6 +10,8 @@ tag: ethereum
 Last weekend saw the release of the highly anticipated Paradigm CTF. Amongst the many challenges of varying difficulty, there was a PvP game which involves racing cars against each other. The only catch, however, is that the cars would be controlled by smart contracts! Over the course of 24 hours, developers would deploy new contracts to try and beat each other and to end the competition with the highest ELO. 
 
 Within the last minutes, it was neck-and-neck between three teams (OpenSea, JustLurking, and myself) with OpenSea just snatching the win in the very last races. Although I'm gutted I didn't win, I'll take the 2nd place finish. I will include the source code for my car at the bottom of the post, but I'm not sure how much it makes sense without understanding the thought process that went into writing it! Feel free to scroll down to the bottom to have a look.
+
+![Alt Text]({static}/images/monaco-scoreboard.png)
 
 ## The Beginnings
 

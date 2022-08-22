@@ -43,6 +43,7 @@
                 <h2>Introduction</h2>
 <p>Last weekend saw the release of the highly anticipated Paradigm CTF. Amongst the many challenges of varying difficulty, there was a PvP game which involves racing cars against each other. The only catch, however, is that the cars would be controlled by smart contracts! Over the course of 24 hours, developers would deploy new contracts to try and beat each other and to end the competition with the highest ELO. </p>
 <p>Within the last minutes, it was neck-and-neck between three teams (OpenSea, JustLurking, and myself) with OpenSea just snatching the win in the very last races. Although I'm gutted I didn't win, I'll take the 2nd place finish. I will include the source code for my car at the bottom of the post, but I'm not sure how much it makes sense without understanding the thought process that went into writing it! Feel free to scroll down to the bottom to have a look.</p>
+<p><img alt="Alt Text" src="http://localhost:8080/images/monaco-scoreboard.png"></p>
 <h2>The Beginnings</h2>
 <p>When the competition started on Saturday night, I was very excited and deployed my first car. My first car (MaxBidCar) was very simple. Just buy 11 acceleration, every round. I didn't win many races, but I certainly managed to get off the start line quickly. I then started to realise that the strategy you should take depends completely on the strategy taken by other players. In this example, I realised that if I had started quickly (because I bought up all the acceleration) there was a chance that the guy behind me hadn't coded any shell mechanism. Indeed, the only races I managed to win are the ones where I didn't get shelled.</p>
 <p>I realised I needed to be more clever than this, so I decided to change the amount of acceleration being bought. There was a trade-off between buying as much acceleration as possible vs being economic. I started to think that the optimal strategy would be an economic strategy. After re-reading the rules, I tried to understand the exponential pricing algorithm and come up with a solution. I started with the following:</p>
@@ -183,7 +184,7 @@
                 <div class="clear"></div>
 
                 <div class="info">
-                    <a href="http://localhost:8080/0xmonaco.html">posted at 00:00</a>
+                    <a href="http://localhost:8080/0xmonaco.html">posted at 20:27</a>
                     &nbsp;&middot;&nbsp;<a href="http://localhost:8080/category/smart-contracts.html" rel="tag">Smart Contracts</a>
                 </div>
             </article>            <h4 class="date">Jun 27, 2022</h4>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Abdulla's Blog | 0xMonaco</title>
+    <link rel="shortcut icon" type="image/png" href="http://localhost:8080/favicon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="http://localhost:8080/favicon.ico">
+    <link href="http://localhost:8080/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Abdulla's Blog Full Atom Feed" />
+    <link href="http://localhost:8080/feeds/smart-contracts.atom.xml" type="application/atom+xml" rel="alternate" title="Abdulla's Blog Categories Atom Feed" />
+    <link rel="stylesheet" href="http://localhost:8080/theme/css/main.css" type="text/css" />
+    <link rel="stylesheet" href="http://localhost:8080/theme/css/pygments.css" type="text/css" />
+    <meta name="generator" content="Pelican" />
+    <meta name="description" content="" />
+    <meta name="author" content="Abdulla Al-Kamil" />
+
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="http://localhost:8080/">Home</a></li>
+                <li><a href="http://localhost:8080/pages/about.html">About Me</a></li>
+                <li><a href="https://github.com/abdullathedruid">GitHub</a></li>
+                <li><a href="http://localhost:8080/tags">Tags</a></li>
+                <li><a href="http://localhost:8080/categories">Categories</a></li>
+                <li><a href="http://localhost:8080/archives">Archives</a></li>
+            </ul>
+        </nav>
+        <div class="header_box">
+            <h1><a href="http://localhost:8080/">Abdulla's Blog</a></h1>
+        </div>
+    </header>
+    <div id="wrapper">
+        <div id="content">            <h4 class="date">Aug 22, 2022</h4>
+
+            <article class="post">
+                <h2 class="title">
+                    <a href="http://localhost:8080/0xmonaco.html" rel="bookmark" title="Permanent Link to &quot;0xMonaco&quot;">0xMonaco</a>
+                </h2>
+
+                
+                
+
+                <h2>Introduction</h2>
+<p>Last weekend saw the release of the highly anticipated Paradigm CTF. Amongst the many challenges of varying difficulty, there was a PvP game which involves racing cars against each other. The only catch, however, is that the cars would be controlled by smart contracts! Over the course of 24 hours, developers would deploy new contracts to try and beat each other and to end the competition with the highest ELO. </p>
+<p>Within the last minutes, it was neck-and-neck between three teams (OpenSea, JustLurking, and myself) with OpenSea just snatching the win in the very last races. Although I'm gutted I didn't win, I'll take the 2nd place finish. I will include the source code for my car at the bottom of the post, but I'm not sure how much it makes sense without understanding the thought process that went into writing it! Feel free to scroll down to the bottom to have a look.</p>
+<p><img alt="Alt Text" src="http://localhost:8080/images/monaco-scoreboard.png"></p>
+<h2>The Beginnings</h2>
+<p>When the competition started on Saturday night, I was very excited and deployed my first car. My first car (MaxBidCar) was very simple. Just buy 11 acceleration, every round. I didn't win many races, but I certainly managed to get off the start line quickly. I then started to realise that the strategy you should take depends completely on the strategy taken by other players. In this example, I realised that if I had started quickly (because I bought up all the acceleration) there was a chance that the guy behind me hadn't coded any shell mechanism. Indeed, the only races I managed to win are the ones where I didn't get shelled.</p>
+<p>I realised I needed to be more clever than this, so I decided to change the amount of acceleration being bought. There was a trade-off between buying as much acceleration as possible vs being economic. I started to think that the optimal strategy would be an economic strategy. After re-reading the rules, I tried to understand the exponential pricing algorithm and come up with a solution. I started with the following:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// This is cheap speed</span>
+<span class="kt">while</span><span class="w"> </span><span class="p">(</span>monaco<span class="p">.</span>getAccelerateCost<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m m-Decimal">20</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span>ourCar<span class="p">.</span>balance<span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="kt">uint24</span><span class="p">(</span>monaco<span class="p">.</span>buyAcceleration<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">));</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// shell someone if shells are cheap, and we are not in lead</span>
+<span class="kt">if</span><span class="w"> </span><span class="p">(</span>ourCarIndex<span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="m m-Decimal">0</span><span class="w"> </span><span class="err">&amp;&amp;</span><span class="w"> </span>monaco<span class="p">.</span>getShellCost<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m m-Decimal">200</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span>ourCar<span class="p">.</span>balance<span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="kt">uint24</span><span class="p">(</span>monaco<span class="p">.</span>buyShell<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">));</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>The documentation had suggested that the "default" price for acceleration was 20, and for shells was 200. Therefore we buy these whenever items whenever we can get them at a bargain - regardless of what our current speed is! I noticed that this strategy was very effective in certain scenarios. When the other two racers were very aggressive, they would spend all their coins early on in the game. Eventually they will both be priced out of taking additional turns. At this point, I can use all the cheap moves to slowly sail across the finish line.</p>
+<h2>Economics and Meta-Game Theory</h2>
+<p>Any competitive gamer will understand the concept of the 'meta' or 'metagame'. Over time, it became apparent that multiple different strategies were evolving - some would frontload the start of their race, others would save their economy for a push at the end. Some people had different thresholds for which they would prioritise their own speed vs shelling others to reduce their speed. This metagame became apparent to me after watching some of my own races. It almost appeared like the game evolved into rock paper scissors, where the three different behaviours were "acceleratooor", "shellooor", "economicooor".</p>
+<p>As my previous strategies had been quite poor, my elo dropped down to the 900s. This became quite frustrating as it became clear that the metagame at elo ~900 was different to ~1100 and ~1300 and ~1500 were all different (Although I didn't have that much time to learn the top meta!). A user that wastes all his coins buying acceleration should be punished by a swift shell from the player behind them, however in some elos there were many cars which never bought any shells! So a "Greedy" algorithm which just max bids acceleration, and hopes that the player behind them doesn't shell them becomes very effective.</p>
+<p>Going back to my algorithm, I wanted to expand on the code I highlighted above. I liked this algorithm because it would be cautious when the other two racers were aggressive, and was aggressive when the other players were passive. I decided to converge around the current price of acceleration/shells as an indicator for whether these actions were overbought or not. If acceleration was expensive, I would just sit and wait for it to slow down whilst also shelling everyone in front of me. Unfortunately, I found that most of the time, my car was being too stingy and avoided paying for most actions and so just sat at the start line for most of the race.</p>
+<p>After finding out that my car was ending the races with most of its coins, I realised I could be more spend more buying actions than the default cost. Deciding to buy acceleration whenever its price was less than <code>20</code> meant that I didn't buy acceleration a lot of the time, especially at the end of the races when you need acceleration the most! I then created a function <code>getMultipliedInput()</code> which I would use to scale this value. At first I tried 150% scaling (so I would buy acceleration at 30 instead of 20), and then 200%. I then experimented with using other parameters as part of this scaling. I tried looking at the difference between my balance and the average of the others players balance - this wasn't an effective strategy!. I also looked at the number of turns, and distance travelled as methods of estimating "how close are we to the end of the game".</p>
+<p>In the end, I chose to use an algorithm that was very similar to the compound interest rate formula utilising a kink. I looked at distance travelled, and number of turns taken in order to calculate how much my car was willing to bid on acceleration/shells. I was able to use the test file supplied in the project folder to test different cars by running <code>forge test -vv</code> to test my car against other example cars. I was able to use this to set some initial variables for the kink distance and sprint factor. This was my first time using foundry, and I was impressed by the speed I was able to iterate over making changes to these variables.</p>
+<h2>Summary</h2>
+<p>You will have noticed throughout the article I have made many assessments to the functioning of my car. Indeed, it is pointless to make changes to your cars code without having a hypothesis to validate/invalidate these changes. There are many different frameworks for continuous improvement, but broadly they involve 1. coming up with a theory 2. making a change 3. assess response of change 4. repeat. I don't think it's any coincidence that the three teams that came in the top three, all had approximately submissions. I feel like any less than this implied that users were less willing to experiment/make changes with their code. People with more submissions would probably not have had sufficient time to assess the impact of their changes!</p>
+<p>Naturally, I would also assume that other people may have spent their time working on the rest of the CTF challenges. So, thanks again to Paradigm for creating an entertaining set of challenges. This was definitely the most amount of fun I've had on-chain, and would love to see some on-going development for 0xMonaco. Now, here's the code you all wanted to see:</p>
+<h2>The Code</h2>
+<div class="highlight"><pre><span></span><code><span class="c1">// SPDX-License-Identifier: MIT</span>
+<span class="k">pragma solidity</span><span class="w"> </span><span class="err">0.8.13</span><span class="p">;</span><span class="w"></span>
+
+<span class="kt">import</span><span class="w"> </span><span class="s2">&quot;./Car.sol&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="kt">import</span><span class="w"> </span><span class="s2">&quot;forge-std/console.sol&quot;</span><span class="p">;</span><span class="w"></span>
+
+<span class="c1">// elo: 965.90 when we start</span>
+
+<span class="k">contract</span><span class="w"> </span><span class="ni">ZoomCar</span><span class="w"> </span><span class="kt">is</span><span class="w"> </span>Car<span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">constructor</span><span class="p">(</span>Monaco<span class="w"> </span>_monaco<span class="p">)</span><span class="w"> </span>Car<span class="p">(</span>_monaco<span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">uint256</span><span class="w"> </span><span class="k">internal </span><span class="nv">constant</span><span class="w"> </span>KINK_DISTANCE<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m m-Decimal">700</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">uint256</span><span class="w"> </span><span class="k">internal </span><span class="nv">constant</span><span class="w"> </span>KINK_FACTOR<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">3</span>_000<span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">uint256</span><span class="w"> </span><span class="k">internal </span><span class="nv">constant</span><span class="w"> </span>SPRINT_FACTOR<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">11</span>_500<span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">uint256</span><span class="w"> </span><span class="k">internal </span><span class="nv">constant</span><span class="w"> </span>FINISH_DISTANCE<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m m-Decimal">1000</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">function</span><span class="w"> </span><span class="nv">getMultipliedInput</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="kt">uint256</span><span class="w"> </span><span class="nv">input</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="kt">uint32</span><span class="w"> </span><span class="nv">distance</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="kt">uint16</span><span class="w"> </span><span class="nv">turn</span><span class="w"></span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="kt">internal</span><span class="w"> </span>view<span class="w"> </span><span class="kt">returns</span><span class="w"> </span><span class="p">(</span><span class="kt">uint256</span><span class="w"> </span><span class="nv">output</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">if</span><span class="w"> </span><span class="p">(</span>distance<span class="w"> </span><span class="o">&lt;</span><span class="w"> </span>KINK_DISTANCE<span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span>output<span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">                </span>input<span class="w"> </span><span class="o">+</span><span class="w"></span>
+<span class="w">                </span><span class="p">((</span>turn<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m m-Decimal">3</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m m-Decimal">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
+<span class="w">                </span><span class="p">((</span>input<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">((</span>distance<span class="w"> </span><span class="o">*</span><span class="w"> </span>KINK_FACTOR<span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span>KINK_DISTANCE<span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m m-Decimal">1000</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="kt">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span>output<span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">                </span>input<span class="w"> </span><span class="o">+</span><span class="w"></span>
+<span class="w">                </span><span class="p">((</span>turn<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m m-Decimal">3</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m m-Decimal">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
+<span class="w">                </span><span class="p">((</span>input<span class="w"> </span><span class="o">*</span><span class="w"></span>
+<span class="w">                    </span><span class="p">(</span>KINK_FACTOR<span class="w"> </span><span class="o">+</span><span class="w"></span>
+<span class="w">                        </span><span class="p">(((</span>distance<span class="w"> </span><span class="o">-</span><span class="w"> </span>KINK_DISTANCE<span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span>SPRINT_FACTOR<span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"></span>
+<span class="w">                            </span><span class="p">(</span>FINISH_DISTANCE<span class="w"> </span><span class="o">-</span><span class="w"> </span>KINK_DISTANCE<span class="p">))))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m m-Decimal">1000</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span>console<span class="p">.</span>log<span class="p">(</span>output<span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">function</span><span class="w"> </span><span class="nv">takeYourTurn</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span>Monaco<span class="p">.</span>CarData<span class="p">[]</span><span class="w"> </span>calldata<span class="w"> </span>allCars<span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="kt">uint256</span><span class="w"> </span><span class="nv">ourCarIndex</span><span class="w"></span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="kt">external</span><span class="w"> </span>override<span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span>Monaco<span class="p">.</span>CarData<span class="w"> </span><span class="kt">memory</span><span class="w"> </span>ourCar<span class="w"> </span><span class="o">=</span><span class="w"> </span>allCars<span class="p">[</span>ourCarIndex<span class="p">];</span><span class="w"></span>
+
+<span class="w">        </span><span class="kt">uint16</span><span class="w"> </span><span class="nv">turn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>monaco<span class="p">.</span>turns<span class="p">();</span><span class="w"></span>
+
+<span class="w">        </span><span class="c1">// In the final sprint, if we are 2nd:</span>
+<span class="w">        </span><span class="c1">// shell the guy ahead if he finishes before us</span>
+<span class="w">        </span><span class="kt">if</span><span class="w"> </span><span class="p">(</span>ourCarIndex<span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m m-Decimal">1</span><span class="w"> </span><span class="err">&amp;&amp;</span><span class="w"> </span>allCars<span class="p">[</span>ourCarIndex<span class="p">].</span>y<span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span>KINK_DISTANCE<span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kt">uint256</span><span class="w"> </span><span class="nv">our_ttg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m m-Decimal">1</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
+<span class="w">                </span><span class="p">(</span>FINISH_DISTANCE<span class="w"> </span><span class="o">-</span><span class="w"> </span>allCars<span class="p">[</span>ourCarIndex<span class="p">].</span>y<span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"></span>
+<span class="w">                </span>allCars<span class="p">[</span>ourCarIndex<span class="p">].</span>speed<span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="kt">uint256</span><span class="w"> </span><span class="nv">their_ttg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m m-Decimal">1</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
+<span class="w">                </span><span class="p">(</span>FINISH_DISTANCE<span class="w"> </span><span class="o">-</span><span class="w"> </span>allCars<span class="p">[</span>ourCarIndex<span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m m-Decimal">1</span><span class="p">].</span>y<span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"></span>
+<span class="w">                </span>allCars<span class="p">[</span>ourCarIndex<span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m m-Decimal">1</span><span class="p">].</span>speed<span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="kt">if</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">                </span>their_ttg<span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span>our_ttg<span class="w"> </span><span class="err">&amp;&amp;</span><span class="w"> </span>ourCar<span class="p">.</span>balance<span class="w"> </span><span class="o">&gt;</span><span class="w"> </span>monaco<span class="p">.</span>getShellCost<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span>ourCar<span class="p">.</span>balance<span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="kt">uint24</span><span class="p">(</span>monaco<span class="p">.</span>buyShell<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">));</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="c1">// This is cheap speed</span>
+<span class="w">        </span><span class="kt">for</span><span class="w"> </span><span class="p">(</span><span class="kt">uint256</span><span class="w"> </span><span class="nv">i</span><span class="p">;</span><span class="w"> </span>i<span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m m-Decimal">10</span><span class="p">;</span><span class="w"> </span>i<span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kt">if</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">                </span>monaco<span class="p">.</span>getAccelerateCost<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"></span>
+<span class="w">                </span>getMultipliedInput<span class="p">(</span><span class="m m-Decimal">20</span><span class="p">,</span><span class="w"> </span>allCars<span class="p">[</span>ourCarIndex<span class="p">].</span>y<span class="p">,</span><span class="w"> </span>turn<span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span>ourCar<span class="p">.</span>balance<span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="kt">uint24</span><span class="p">(</span>monaco<span class="p">.</span>buyAcceleration<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">));</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="c1">// if we are in lead, price gouge shells</span>
+<span class="w">        </span><span class="kt">if</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span>ourCarIndex<span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m m-Decimal">0</span><span class="w"> </span><span class="err">&amp;&amp;</span><span class="w"></span>
+<span class="w">            </span>monaco<span class="p">.</span>getShellCost<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"></span>
+<span class="w">            </span>getMultipliedInput<span class="p">(</span><span class="m m-Decimal">200</span><span class="p">,</span><span class="w"> </span>allCars<span class="p">[</span>ourCarIndex<span class="p">].</span>y<span class="p">,</span><span class="w"> </span>turn<span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span>ourCar<span class="p">.</span>balance<span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="kt">uint24</span><span class="p">(</span>monaco<span class="p">.</span>buyShell<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="c1">// If we aren&#39;t leading:</span>
+<span class="w">        </span><span class="kt">if</span><span class="w"> </span><span class="p">(</span>ourCarIndex<span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m m-Decimal">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kt">uint32</span><span class="w"> </span><span class="nv">ahead_speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>allCars<span class="p">[</span>ourCarIndex<span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m m-Decimal">1</span><span class="p">].</span>speed<span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="kt">uint256</span><span class="w"> </span><span class="nv">shell_cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>monaco<span class="p">.</span>getShellCost<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">            </span><span class="c1">// If we&#39;re in last, and the guy in first is faster than second</span>
+<span class="w">            </span><span class="c1">// We shouldn&#39;t shell, because we want the second guy to shell the first</span>
+<span class="w">            </span><span class="kt">bool</span><span class="w"> </span><span class="nv">shouldShell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="kt">if</span><span class="w"> </span><span class="p">(</span>ourCarIndex<span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m m-Decimal">2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="kt">if</span><span class="w"> </span><span class="p">(</span>ahead_speed<span class="w"> </span><span class="o">&lt;</span><span class="w"> </span>allCars<span class="p">[</span>ourCarIndex<span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m m-Decimal">2</span><span class="p">].</span>speed<span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span>shouldShell<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">            </span><span class="c1">// shell person ahead if their speed is greater than cost of shell</span>
+<span class="w">            </span><span class="kt">if</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">                </span>shouldShell<span class="w"> </span><span class="err">&amp;&amp;</span><span class="w"></span>
+<span class="w">                </span><span class="p">(</span>shell_cost<span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
+<span class="w">                    </span>getMultipliedInput<span class="p">(</span><span class="w"></span>
+<span class="w">                        </span>ahead_speed<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m m-Decimal">16</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span>allCars<span class="p">[</span>ourCarIndex<span class="p">].</span>y<span class="p">,</span><span class="w"></span>
+<span class="w">                        </span>turn<span class="w"></span>
+<span class="w">                    </span><span class="p">)</span><span class="w"> </span><span class="err">&amp;&amp;</span><span class="w"></span>
+<span class="w">                    </span>ahead_speed<span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m m-Decimal">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span>ourCar<span class="p">.</span>balance<span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="kt">uint24</span><span class="p">(</span>monaco<span class="p">.</span>buyShell<span class="p">(</span><span class="m m-Decimal">1</span><span class="p">));</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+                <div class="clear"></div>
+
+                <div class="info">
+                    <a href="http://localhost:8080/0xmonaco.html">posted at 20:27</a>
+                    &nbsp;&middot;&nbsp;<a href="http://localhost:8080/category/smart-contracts.html" rel="tag">Smart Contracts</a>
+                </div>
+            </article>
+            <div class="clear"></div>
+            <footer>
+                <p>
+                <a href="https://github.com/jody-frankowski/blue-penguin">Blue Penguin</a> Theme
+                &middot;
+                Powered by <a href="http://getpelican.com">Pelican</a>
+                &middot;
+                <a href="http://localhost:8080/feeds/all.atom.xml" rel="alternate">Atom Feed</a>
+            </footer>
+        </div>
+        <div class="clear"></div>
+    </div>
+</body>
+</html>
